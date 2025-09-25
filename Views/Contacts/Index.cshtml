@@ -1,0 +1,108 @@
+﻿@model IEnumerable<Trainee_Test.Models.Contact>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-info">@TempData["Message"]</div>
+}
+
+<!-- Форма для завантаження CSV -->
+<form asp-action="ImportFromCsv" asp-controller="Contacts"
+      enctype="multipart/form-data" method="post">
+    <div class="form-group">
+        <input type="file" name="file" />
+        <button type="submit" class="btn btn-primary">Upload CSV</button>
+    </div>
+</form>
+
+<table class="table" id="contactsTable">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>DateOfBirth</th>
+            <th>Married</th>
+            <th>Phone</th>
+            <th>Salary</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr data-id="@item.Id">
+                <td><input type="text" class="form-control" value="@item.Name" /></td>
+                <td>
+                    <input type="date" class="form-control" value="@(item.DateOfBirth?.ToString("yyyy-MM-dd") ?? "")" />
+                </td>
+                <td><input type="checkbox" class="form-check-input" @(item.Married ? "checked" : "") /></td>
+                <td><input type="text" class="form-control" value="@item.Phone" /></td>
+                <td>
+                    <input type="number" class="form-control" value="@item.Salary.ToString(System.Globalization.CultureInfo.InvariantCulture)" step="0.01" />
+                </td>
+                <td>
+                    <button class="btn btn-success saveBtn">Save</button>
+                </td>
+            </tr>
+
+        }
+    </tbody>
+</table>
+
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+<script>
+    $(document).ready(function () {
+        var table = $('#contactsTable').DataTable({
+            paging: true,
+            searching: true,
+            ordering: true,
+            columnDefs: [
+                { orderable: false, targets: 5 } // остання колонка без сортування
+            ]
+        });
+
+        // Inline save
+        $('#contactsTable').on('click', '.saveBtn', function () {
+            var row = $(this).closest('tr');
+            var id = row.data('id');
+
+            var name = row.find('td:eq(0) input').val();
+            var dateOfBirth = row.find('td:eq(1) input').val();
+            var married = row.find('td:eq(2) input').is(':checked');
+            var phone = row.find('td:eq(3) input').val();
+            var salary = row.find('td:eq(4) input').val();
+
+            $.ajax({
+                url: '@Url.Action("UpdateContact", "Contacts")',
+                type: 'POST',
+                data: {
+                    id: id,
+                    name: name,
+                    dateOfBirth: dateOfBirth,
+                    married: married,
+                    phone: phone,
+                    salary: salary
+                },
+                success: function (response) {
+                    if (response.success) {
+                        alert('Contact updated successfully');
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                }
+            });
+        });
+    });
+</script>
